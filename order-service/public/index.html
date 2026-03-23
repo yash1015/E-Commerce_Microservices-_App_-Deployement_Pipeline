@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orders – ShopMS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; color: #333; }
+
+    header {
+      background: #2c3e50; color: white; padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.3rem; }
+    nav a { color: #ccc; text-decoration: none; margin-left: 16px; font-size: 0.9rem; }
+    nav a:hover { color: white; }
+
+    .container { max-width: 800px; margin: 30px auto; padding: 0 20px; }
+    h2 { margin-bottom: 20px; font-size: 1.4rem; color: #2c3e50; }
+
+    .empty { text-align: center; padding: 60px 20px; color: #999; }
+    .empty span { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+    .order-card {
+      background: white; border-radius: 10px; padding: 20px;
+      margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    }
+    .order-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee;
+    }
+    .order-id { font-weight: bold; font-size: 1rem; }
+    .order-date { font-size: 0.82rem; color: #999; margin-top: 2px; }
+
+    .status-badge {
+      padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+    }
+    .status-Processing { background: #fff3cd; color: #856404; }
+    .status-Shipped    { background: #cfe2ff; color: #0a58ca; }
+    .status-Delivered  { background: #d1e7dd; color: #0f5132; }
+    .status-Cancelled  { background: #f8d7da; color: #842029; }
+
+    .order-items { margin-bottom: 12px; }
+    .order-items li {
+      font-size: 0.88rem; color: #555; padding: 4px 0;
+      border-bottom: 1px dashed #f0f0f0; list-style: none;
+      display: flex; justify-content: space-between;
+    }
+
+    .order-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 12px;
+    }
+    .order-total { font-weight: bold; color: #e74c3c; font-size: 1rem; }
+
+    select {
+      padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 0.85rem; cursor: pointer; background: white;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📦 ShopMS – Orders</h1>
+  <nav>
+    <a href="http://localhost:3000">🏠 Home</a>
+    <a href="http://localhost:3001">🛍️ Products</a>
+    <a href="http://localhost:3002">🛒 Cart</a>
+  </nav>
+</header>
+
+<div class="container">
+  <h2>Your Orders</h2>
+  <div id="orders-list"></div>
+</div>
+
+<script>
+  async function loadOrders() {
+    const res = await fetch('/api/orders');
+    const orders = await res.json();
+    render(orders);
+  }
+
+  function render(orders) {
+    const div = document.getElementById('orders-list');
+    if (orders.length === 0) {
+      div.innerHTML = `<div class="empty"><span>📦</span>No orders yet.<br><a href="http://localhost:3001">Start shopping →</a></div>`;
+      return;
+    }
+
+    div.innerHTML = orders.map(order => `
+      <div class="order-card">
+        <div class="order-header">
+          <div>
+            <div class="order-id">Order #${order.id}</div>
+            <div class="order-date">${order.placedAt}</div>
+          </div>
+          <span class="status-badge status-${order.status.replace(' ','')}">${order.status}</span>
+        </div>
+        <ul class="order-items">
+          ${order.items.map(i => `
+            <li>
+              <span>${i.name} × ${i.quantity}</span>
+              <span>$${(i.price * i.quantity).toFixed(2)}</span>
+            </li>
+          `).join('')}
+        </ul>
+        <div class="order-footer">
+          <span class="order-total">Total: $${parseFloat(order.total).toFixed(2)}</span>
+          <select onchange="updateStatus(${order.id}, this.value)">
+            <option ${order.status==='Processing'?'selected':''}>Processing</option>
+            <option ${order.status==='Shipped'?'selected':''}>Shipped</option>
+            <option ${order.status==='Delivered'?'selected':''}>Delivered</option>
+            <option ${order.status==='Cancelled'?'selected':''}>Cancelled</option>
+          </select>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function updateStatus(id, status) {
+    await fetch(`/api/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    loadOrders();
+  }
+
+  loadOrders();
+</script>
+</body>
+</html>

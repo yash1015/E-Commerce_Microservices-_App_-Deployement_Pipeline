@@ -1,0 +1,11 @@
+{
+  "name": "ecommerce-microservices",
+  "version": "1.0.0",
+  "description": "Simple Ecommerce Microservices App",
+  "scripts": {
+    "start:gateway": "node gateway/index.js",
+    "start:products": "node product-service/index.js",
+    "start:cart": "node cart-service/index.js",
+    "start:orders": "node order-service/index.js"
+  }
+}

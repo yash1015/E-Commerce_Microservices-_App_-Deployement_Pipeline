@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Products – ShopMS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; color: #333; }
+
+    header {
+      background: #2c3e50; color: white; padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.3rem; }
+    nav a {
+      color: #ccc; text-decoration: none; margin-left: 16px; font-size: 0.9rem;
+    }
+    nav a:hover { color: white; }
+
+    .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+    h2 { margin-bottom: 20px; font-size: 1.4rem; color: #2c3e50; }
+
+    .filters { margin-bottom: 20px; }
+    .filters input {
+      padding: 8px 14px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 0.95rem; width: 260px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white; border-radius: 10px; padding: 20px;
+      text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: transform 0.2s;
+    }
+    .card:hover { transform: translateY(-4px); }
+    .card .emoji { font-size: 3rem; margin-bottom: 10px; }
+    .card h3 { font-size: 1rem; margin-bottom: 6px; }
+    .card .category { font-size: 0.78rem; color: #888; margin-bottom: 8px; }
+    .card .desc { font-size: 0.82rem; color: #666; margin-bottom: 12px; line-height: 1.4; }
+    .card .price { font-size: 1.2rem; font-weight: bold; color: #e74c3c; margin-bottom: 6px; }
+    .card .stock { font-size: 0.78rem; color: #27ae60; margin-bottom: 12px; }
+    .card button {
+      background: #2c3e50; color: white; border: none;
+      padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+      width: 100%;
+    }
+    .card button:hover { background: #e74c3c; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #27ae60; color: white; padding: 12px 20px;
+      border-radius: 8px; font-size: 0.9rem;
+      display: none; animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🛍️ ShopMS – Products</h1>
+  <nav>
+    <a href="http://localhost:3000">🏠 Home</a>
+    <a href="http://localhost:3002">🛒 Cart</a>
+    <a href="http://localhost:3003">📦 Orders</a>
+  </nav>
+</header>
+
+<div class="container">
+  <h2>All Products</h2>
+  <div class="filters">
+    <input type="text" id="search" placeholder="Search products..." oninput="filterProducts()" />
+  </div>
+  <div class="grid" id="product-grid"></div>
+</div>
+
+<div class="toast" id="toast">✅ Added to cart!</div>
+
+<script>
+  let allProducts = [];
+
+  async function loadProducts() {
+    const res = await fetch('/api/products');
+    allProducts = await res.json();
+    renderProducts(allProducts);
+  }
+
+  function renderProducts(products) {
+    const grid = document.getElementById('product-grid');
+    grid.innerHTML = products.map(p => `
+      <div class="card">
+        <div class="emoji">${p.image}</div>
+        <h3>${p.name}</h3>
+        <div class="category">${p.category}</div>
+        <div class="desc">${p.description}</div>
+        <div class="price">$${p.price.toFixed(2)}</div>
+        <div class="stock">In Stock: ${p.stock}</div>
+        <button onclick="addToCart(${p.id}, '${p.name}', ${p.price})">Add to Cart</button>
+      </div>
+    `).join('');
+  }
+
+  function filterProducts() {
+    const q = document.getElementById('search').value.toLowerCase();
+    renderProducts(allProducts.filter(p =>
+      p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+    ));
+  }
+
+  async function addToCart(id, name, price) {
+    await fetch('http://localhost:3002/api/cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: id, name, price, quantity: 1 })
+    });
+    const toast = document.getElementById('toast');
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2000);
+  }
+
+  loadProducts();
+</script>
+</body>
+</html>
